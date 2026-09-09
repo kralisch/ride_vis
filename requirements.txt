@@ -1,0 +1,3 @@
+folium>=0.20
+gpxpy>=1.6
+Pillow>=11

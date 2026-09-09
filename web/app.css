@@ -1,0 +1,199 @@
+/* Colours come from ride_vis/palette.py - outbound blue, inbound orange,
+   checked against the grey basemap. */
+:root {
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --surface: #fcfcfb;
+  --plane: #f2f1ee;
+  --line: #e1e0d9;
+  --hair: rgba(11, 11, 11, .1);
+  --outbound: #2a78d6;
+  --inbound: #eb6834;
+  --head-h: 56px;
+  --profile-h: 116px;
+  --strip-h: 132px;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+
+/* A display of its own would otherwise override the hidden attribute. */
+[hidden] { display: none !important; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background: var(--plane);
+  overflow: hidden;
+}
+
+h1, h2 { margin: 0; font-weight: 600; }
+h1 { font-size: 15px; letter-spacing: .01em; }
+h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-2); }
+p { margin: 0; }
+.muted { color: var(--ink-2); }
+.small { font-size: 11.5px; }
+
+#app {
+  display: grid;
+  /* minmax(0, 1fr) rather than the default auto: otherwise the column grows to
+     the width of the timeline (hundreds of thumbnails in a row) and drags the
+     map and the profile canvas out to a multiple of the window width. */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: var(--head-h) 1fr var(--profile-h) var(--strip-h);
+  height: 100%;
+  overflow: hidden;
+}
+
+#head, #map, #profile-panel, #strip-panel { min-width: 0; }
+
+/* -- Kopfzeile ----------------------------------------------------------- */
+#head {
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  padding: 0 16px; background: var(--surface); border-bottom: 1px solid var(--hair);
+  z-index: 5;
+}
+.brand { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+#totals { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.controls { display: flex; align-items: center; gap: 14px; flex: none; }
+.field { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-2); }
+.field select {
+  font: inherit; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--hair); border-radius: 6px; padding: 4px 7px;
+}
+.field input[type=range] { width: 92px; accent-color: var(--outbound); }
+.toggle {
+  font: 600 12px/1 inherit; padding: 7px 12px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--hair); background: var(--surface); color: var(--ink-2);
+}
+.toggle[aria-pressed=true] { background: var(--outbound); border-color: var(--outbound); color: #fff; }
+.link {
+  font: inherit; font-size: 12px; background: none; border: 0; padding: 0;
+  color: var(--outbound); cursor: pointer; text-decoration: underline;
+}
+
+/* -- Karte --------------------------------------------------------------- */
+#map { position: relative; }
+.maplibregl-ctrl-group { border-radius: 6px !important; }
+
+/* -- Legende ------------------------------------------------------------- */
+#legend {
+  position: absolute; left: 14px; top: calc(var(--head-h) + 14px); z-index: 4;
+  width: 262px; padding: 12px 13px; border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--hair); box-shadow: 0 2px 12px rgba(0, 0, 0, .12);
+}
+.legend-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+#days { list-style: none; margin: 0; padding: 0; }
+#days li { border-radius: 5px; }
+#days button {
+  display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 9px;
+  width: 100%; padding: 5px 6px; font: inherit; font-size: 12.5px; text-align: left;
+  background: none; border: 0; border-radius: 5px; cursor: pointer; color: var(--ink);
+}
+#days button:hover { background: rgba(11, 11, 11, .05); }
+#days li.is-off button { opacity: .38; }
+#days li.is-focus button { background: rgba(42, 120, 214, .12); }
+#days .num { color: var(--ink-2); font-variant-numeric: tabular-nums; text-align: right; font-size: 11.5px; }
+.legend-sub { margin: 11px 0 5px; padding-top: 9px; border-top: 1px solid var(--hair); }
+#collections { list-style: none; margin: 0; padding: 0; }
+#collections label {
+  display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 8px;
+  padding: 4px 6px; border-radius: 5px; cursor: pointer; font-size: 12.5px;
+}
+#collections label:hover { background: rgba(11, 11, 11, .05); }
+#collections input { margin: 0; accent-color: var(--outbound); cursor: pointer; }
+/* The swatch shows the ring this collection's markers wear on the map - with
+   the same white rim, so it holds up over any backdrop. */
+.swatch {
+  width: 13px; height: 13px; border-radius: 50%; background: var(--c);
+  box-shadow: 0 0 0 1.5px #fff, 0 0 0 2.5px rgba(11, 11, 11, .18);
+}
+#collections li.is-off .swatch { opacity: .35; }
+#collections .num { color: var(--ink-2); font-variant-numeric: tabular-nums; font-size: 11.5px; }
+#collections li.is-off label { color: var(--ink-2); }
+
+#legend-hint { margin-top: 9px; padding-top: 8px; border-top: 1px solid var(--hair); font-size: 11.5px; }
+
+/* -- Untere Bereiche ----------------------------------------------------- */
+#profile-panel, #strip-panel {
+  background: var(--surface); border-top: 1px solid var(--hair);
+  padding: 8px 16px 10px; display: flex; flex-direction: column; min-height: 0;
+}
+.panel-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; flex: none; }
+/* The profile sits low, so it needs less room than the timeline. */
+#profile-panel { padding-bottom: 6px; }
+.panel-head .muted { font-size: 12px; font-variant-numeric: tabular-nums; }
+
+#profile-wrap { position: relative; flex: 1; min-height: 0; }
+#profile { display: block; width: 100%; height: 100%; cursor: crosshair; }
+#crosshair {
+  position: absolute; top: 0; bottom: 0; width: 1px; background: var(--ink-2);
+  pointer-events: none;
+}
+
+/* -- Zeitstrahl ---------------------------------------------------------- */
+#strip { flex: 1; min-height: 0; overflow-x: auto; overflow-y: hidden; display: flex; gap: 18px; }
+#strip::-webkit-scrollbar { height: 8px; }
+#strip::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+.strip-day { display: flex; flex-direction: column; gap: 4px; flex: none; }
+.strip-day > h3 {
+  margin: 0; font: 600 11px/1 inherit; letter-spacing: .04em; color: var(--ink-2);
+  padding-left: 2px; border-left: 3px solid var(--c); padding-block: 1px;
+}
+.strip-shots { display: flex; gap: 5px; }
+.strip-shot {
+  position: relative; flex: none; width: 62px; padding: 0; border: 0; background: none;
+  cursor: pointer; border-radius: 5px; text-align: center;
+}
+.strip-shot img {
+  width: 62px; height: 44px; object-fit: cover; border-radius: 4px; display: block;
+  outline: 2px solid transparent; outline-offset: 1px; transition: outline-color .1s;
+}
+.strip-shot span { display: block; font-size: 10.5px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.strip-shot:hover img, .strip-shot.is-active img { outline-color: var(--c); }
+.strip-shot.is-dim { opacity: .3; }
+
+/* -- Lightbox ------------------------------------------------------------ */
+#lightbox {
+  position: fixed; inset: 0; z-index: 50; display: flex; align-items: center;
+  justify-content: center; gap: 8px; background: rgba(10, 10, 10, .88); padding: 28px;
+}
+#lightbox[hidden] { display: none; }
+#lightbox figure { margin: 0; max-width: min(1100px, 88vw); display: flex; flex-direction: column; gap: 9px; }
+#lb-img { max-width: 100%; max-height: 76vh; object-fit: contain; border-radius: 6px; display: block; }
+#lightbox figcaption { display: flex; flex-direction: column; gap: 2px; color: #f2f1ee; }
+#lightbox figcaption .muted { color: #b9b7b0; font-size: 12.5px; }
+#lb-full {
+  align-self: flex-start; margin-top: 5px; padding: 5px 11px; border-radius: 6px;
+  font-size: 12.5px; color: #f2f1ee; text-decoration: none;
+  background: rgba(255, 255, 255, .13); border: 1px solid rgba(255, 255, 255, .18);
+}
+#lb-full:hover { background: rgba(255, 255, 255, .24); }
+#lb-full::after { content: " \2197"; }
+
+.lb-close {
+  position: absolute; top: 16px; right: 20px; font-size: 30px; line-height: 1;
+  color: #f2f1ee; background: none; border: 0; cursor: pointer; padding: 4px 10px;
+}
+.lb-nav {
+  font-size: 34px; line-height: 1; color: #f2f1ee; background: rgba(255, 255, 255, .1);
+  border: 0; border-radius: 7px; padding: 14px 12px; cursor: pointer; flex: none;
+}
+.lb-nav:hover { background: rgba(255, 255, 255, .2); }
+
+@media (max-width: 900px) {
+  :root { --profile-h: 100px; --strip-h: 116px; }
+  #legend { width: 216px; }
+  .controls .field span { display: none; }
+}
+
+#fatal {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 60;
+  max-width: 520px; padding: 14px 18px; border-radius: 8px; background: var(--surface);
+  border: 1px solid var(--hair); box-shadow: 0 4px 20px rgba(0, 0, 0, .2); color: var(--ink);
+}

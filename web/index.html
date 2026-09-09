@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ride</title>
+<link rel="stylesheet" href="vendor/maplibre-gl.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div id="app">
+
+  <header id="head">
+    <div class="brand">
+      <h1 id="title">Ride</h1>
+      <p id="totals" class="muted"></p>
+    </div>
+    <div class="controls">
+      <label class="field">
+        <span>Map</span>
+        <select id="basemap"></select>
+      </label>
+      <label class="field">
+        <span>Relief</span>
+        <input id="exaggeration" type="range" min="1" max="3" step="0.1" value="1.5">
+      </label>
+      <button id="tilt" class="toggle" aria-pressed="true">3D</button>
+    </div>
+  </header>
+
+  <main id="map"></main>
+
+  <aside id="legend" aria-label="Riding days">
+    <div class="legend-head">
+      <h2>Days</h2>
+      <button id="reset" class="link" hidden>Show all</button>
+    </div>
+    <ul id="days"></ul>
+
+    <h2 class="legend-sub">Collections</h2>
+    <ul id="collections"></ul>
+
+    <p id="legend-hint" class="muted">Click a day to zoom to it,
+       shift-click to hide it.</p>
+  </aside>
+
+  <section id="profile-panel" aria-label="Elevation profile">
+    <div class="panel-head">
+      <h2>Elevation</h2>
+      <span id="profile-readout" class="muted"></span>
+    </div>
+    <div id="profile-wrap">
+      <canvas id="profile"></canvas>
+      <div id="crosshair" hidden></div>
+    </div>
+  </section>
+
+  <section id="strip-panel" aria-label="Timeline">
+    <div class="panel-head">
+      <h2>Timeline</h2>
+      <span id="strip-count" class="muted"></span>
+    </div>
+    <div id="strip"></div>
+  </section>
+
+</div>
+
+<div id="lightbox" hidden>
+  <button class="lb-close" aria-label="Close">&times;</button>
+  <button class="lb-nav lb-prev" aria-label="Previous photo">&#8249;</button>
+  <figure>
+    <img id="lb-img" alt="">
+    <figcaption>
+      <strong id="lb-title"></strong>
+      <span id="lb-meta" class="muted"></span>
+      <a id="lb-full" href="#" target="_blank" rel="noopener" hidden></a>
+    </figcaption>
+  </figure>
+  <button class="lb-nav lb-next" aria-label="Next photo">&#8250;</button>
+</div>
+
+<script src="vendor/maplibre-gl.js"></script>
+<!-- The tour data as a script rather than via fetch, so the page also loads
+     when opened straight from the file system. The same data sits alongside
+     as tour.json for anything that wants to process it. -->
+<script src="tour.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
