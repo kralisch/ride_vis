@@ -1,0 +1,45 @@
+# English wording for the app. Copy this file to add a language, then set
+# `language` in ui.toml to its file name.
+#
+# Placeholders in braces are filled in at runtime - keep them as they are.
+
+locale = "en-GB"   # decides how numbers are grouped: 1,431 km
+
+[ui]
+map = "Map"
+relief = "Relief"
+threeD = "3D"
+days = "Days"
+showAll = "Show all"
+collections = "Collections"
+hint = "Click a day to zoom to it, shift-click to hide it."
+elevation = "Elevation"
+timeline = "Timeline"
+close = "Close"
+previous = "Previous photo"
+next = "Next photo"
+dayLabel = "Day {n}"
+totals = "{distance} · {ascent} m climb · {days} days · {photos}"
+photos = "{n} photos"
+photosOf = "{shown} of {total} photos"
+captureOrder = "{photos}, in capture order"
+readout = "{day} · {distance} · {elevation} m · {time} in"
+intoTheDay = "{distance} into the day"
+fullResolution = "Full resolution"
+largeView = "Large view"
+buildFailed = "The view could not be built: {error}"
+
+startFinish = "Start and finish"
+start = "Start"
+finish = "Finish"
+fullScreen = "Full screen"
+exitFullScreen = "Exit full screen"
+mapFoot = "{photos}, {distance}. Positions derived from capture time."
+mapDotted = "Dotted ring: {n} photos outside the recording."
+
+[basemaps]
+light = "Map (light)"
+topo = "Topographic"
+satellite = "Satellite"
+relief = "Hillshade"
+osm = "OpenStreetMap"

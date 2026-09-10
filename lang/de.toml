@@ -1,0 +1,45 @@
+# Deutsche Beschriftungen der App. Zum Hinzufügen einer Sprache diese Datei
+# kopieren und `language` in ui.toml auf den Dateinamen setzen.
+#
+# Platzhalter in geschweiften Klammern werden zur Laufzeit gefüllt - unverändert lassen.
+
+locale = "de-DE"   # bestimmt die Zifferngruppierung: 1.431 km
+
+[ui]
+map = "Karte"
+relief = "Relief"
+threeD = "3D"
+days = "Etappen"
+showAll = "Alle zeigen"
+collections = "Sammlungen"
+hint = "Klick auf eine Etappe zoomt hin, Umschalt-Klick blendet sie aus."
+elevation = "Höhenprofil"
+timeline = "Zeitstrahl"
+close = "Schließen"
+previous = "Vorheriges Foto"
+next = "Nächstes Foto"
+dayLabel = "Tag {n}"
+totals = "{distance} · {ascent} Hm · {days} Tage · {photos}"
+photos = "{n} Fotos"
+photosOf = "{shown} von {total} Fotos"
+captureOrder = "{photos} in Aufnahmereihenfolge"
+readout = "{day} · {distance} · {elevation} m · {time} nach Start"
+intoTheDay = "{distance} ab Tagesstart"
+fullResolution = "Volle Auflösung"
+largeView = "Große Ansicht"
+buildFailed = "Die Ansicht konnte nicht aufgebaut werden: {error}"
+
+startFinish = "Start und Ziel"
+start = "Start"
+finish = "Ziel"
+fullScreen = "Vollbild"
+exitFullScreen = "Vollbild beenden"
+mapFoot = "{photos}, {distance}. Positionen aus der Aufnahmezeit."
+mapDotted = "Gepunkteter Rand: {n} Fotos außerhalb der Aufzeichnung."
+
+[basemaps]
+light = "Karte (hell)"
+topo = "Topografie"
+satellite = "Satellit"
+relief = "Relief"
+osm = "OpenStreetMap"

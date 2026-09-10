@@ -9,6 +9,7 @@ from folium.plugins import Fullscreen, MarkerCluster
 
 from .match import GPS, OUTSIDE, TRACK_GAP, Placement
 from .config import Collection
+from .ui import Ui
 from .palette import CSS_DASHES, INK, INK_MUTED, SURFACE, day_style
 from .route import Track
 
@@ -112,7 +113,8 @@ def _marker(placement: Placement, assets: dict, color: str) -> folium.Marker:
     )
 
 
-def _legend(track: Track, placements: list[Placement], collections: list[Collection], title: str) -> str:
+def _legend(track: Track, placements: list[Placement], collections: list[Collection],
+            title: str, ui: Ui) -> str:
     rows = []
     for day in track.days:
         color, dash = _leaflet_style(day.index)
@@ -137,13 +139,16 @@ def _legend(track: Track, placements: list[Placement], collections: list[Collect
 
     unplaced = sum(1 for p in placements if p.source == OUTSIDE)
     total = f"{track.distance_m / 1000:,.0f}".replace(",", ".")
-    foot = f"{len(placements)} photos, {total} km. Positions derived from capture time."
+    text = ui.strings
+    foot = text["mapFoot"].format(
+        photos=text["photos"].format(n=len(placements)), distance=f"{total} km"
+    )
     if unplaced:
-        foot += f" Dotted ring: {unplaced} photos outside the recording."
+        foot += " " + text["mapDotted"].format(n=unplaced)
     return (
         f'<div class="rv-legend"><h4>{title}</h4>'
         f"<table>{''.join(rows)}</table>"
-        f'<h5>Collections</h5><table>{"".join(sets)}</table>'
+        f'<h5>{text["collections"]}</h5><table>{"".join(sets)}</table>'
         f'<div class="rv-foot">{foot}</div></div>'
     )
 
@@ -154,6 +159,7 @@ def build_map(
     assets: dict,
     collections: list[Collection],
     title: str,
+    ui: Ui,
 ) -> folium.Map:
     """Build the map with riding days and photo markers."""
     fmap = folium.Map(tiles=None, control_scale=True)
@@ -164,10 +170,10 @@ def build_map(
         tiles="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
         attr="Map data &copy; OpenStreetMap contributors, SRTM | "
              "Style &copy; OpenTopoMap (CC-BY-SA)",
-        name="Topographic",
+        name=ui.basemap_names["topo"],
         max_zoom=17,
     ).add_to(fmap)
-    folium.TileLayer("openstreetmap", name="OpenStreetMap").add_to(fmap)
+    folium.TileLayer("openstreetmap", name=ui.basemap_names["osm"]).add_to(fmap)
     # Muted grey with no colour fills of its own - the surface the two route
     # colours were checked against for contrast and colour blindness.
     # (CartoDB Positron would be the obvious pick but now only serves tiles
@@ -176,7 +182,7 @@ def build_map(
         tiles="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/"
               "World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
         attr="&copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors",
-        name="Map (light)",
+        name=ui.basemap_names["light"],
         max_zoom=16,
     ).add_to(fmap)
 
@@ -213,22 +219,22 @@ def build_map(
             _marker(placement, assets, set_colors[placement.photo.collection]).add_to(cluster)
         group.add_to(fmap)
 
-    ends = folium.FeatureGroup(name="Start and finish", show=True)
+    ends = folium.FeatureGroup(name=ui.strings["startFinish"], show=True)
     folium.Marker(
-        track.points[0].position, tooltip="Start",
+        track.points[0].position, tooltip=ui.strings["start"],
         icon=folium.Icon(color="green", icon="play", prefix="fa"),
     ).add_to(ends)
     folium.Marker(
-        track.points[-1].position, tooltip="Finish",
+        track.points[-1].position, tooltip=ui.strings["finish"],
         icon=folium.Icon(color="darkred", icon="flag-checkered", prefix="fa"),
     ).add_to(ends)
     ends.add_to(fmap)
 
-    Fullscreen(title="Full screen", title_cancel="Exit full screen").add_to(fmap)
+    Fullscreen(title=ui.strings["fullScreen"], title_cancel=ui.strings["exitFullScreen"]).add_to(fmap)
     folium.LayerControl(collapsed=False).add_to(fmap)
 
     fmap.get_root().header.add_child(folium.Element(f"<style>{CSS}</style>"))
-    fmap.get_root().html.add_child(folium.Element(_legend(track, placements, collections, title)))
+    fmap.get_root().html.add_child(folium.Element(_legend(track, placements, collections, title, ui)))
     lats = [p.lat for p in track.points]
     lons = [p.lon for p in track.points]
     fmap.fit_bounds([(min(lats), min(lons)), (max(lats), max(lons))])

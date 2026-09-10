@@ -53,6 +53,38 @@ recomputed. Whatever lost its source is cleared out, and the build says how
 much. To keep a photo in the source folder but out of the bundle, list it in
 `exclude`.
 
+## Language and presentation
+
+Two files, kept apart on purpose: **what** to show and **how it is worded**.
+
+`ui.toml` holds the presentation settings:
+
+```toml
+language = "en"        # picks lang/en.toml
+basemap = "satellite"  # light | topo | satellite | relief | osm
+terrain = true         # start tilted
+exaggeration = 1.5     # 1 to 3
+```
+
+`lang/<language>.toml` holds every label the app and the Leaflet map show,
+plus the number format:
+
+```toml
+locale = "en-GB"       # 1,431 km rather than 1.431 km
+
+[ui]
+days = "Days"
+totals = "{distance} · {ascent} m climb · {days} days · {photos}"
+```
+
+English and German ship with the project. To add one, copy a file, translate
+it, and point `language` at it. Anything a translation leaves out falls back to
+English, and the build says which keys those were - so a half-finished file
+still gives a working app.
+
+Switching language is a rebuild of about a second: no image is touched, only
+`tour.js` is written again.
+
 ## How photos reach the map
 
 Capture time is local time, the track is UTC. Every photo is looked up in the
@@ -153,7 +185,7 @@ Only the code lives here. Inputs and everything generated stay out:
 
 | Path | Content |
 |---|---|
-| `ride.toml` | your configuration; copy it from `ride.example.toml` |
+| `ride.toml` | the ride and its collections; copy `ride.example.toml` |
 | `gpx/` | the recorded track and any planned stage files |
 | `data/` | the photo collections |
 | `app/`, `out/` | the build output |
@@ -163,6 +195,7 @@ Only the code lives here. Inputs and everything generated stay out:
 | File | Job |
 |---|---|
 | `ride_vis/config.py` | read `ride.toml`, load tour and collections |
+| `ride_vis/ui.py` | read `ui.toml` and the language file |
 | `ride_vis/photos.py` | EXIF: capture time, offset and GPS |
 | `ride_vis/route.py` | load the GPX track, split it into riding days |
 | `ride_vis/match.py` | place photos on the track by time |
@@ -172,6 +205,7 @@ Only the code lives here. Inputs and everything generated stay out:
 | `ride_vis/palette.py` | colours and stroke patterns |
 | `ride_vis/geo.py` | distances |
 | `web/` | the app itself: `index.html`, `app.css`, `app.js` |
+| `lang/` | wording per language |
 
 ## Pitfalls already settled
 

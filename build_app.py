@@ -28,9 +28,12 @@ from ride_vis.images import FULL_MODES, HALF_DIR, marker, prepare
 from ride_vis.match import GPS, OUTSIDE, TRACK, TRACK_GAP, place_photos, verify_offset
 from ride_vis.palette import COLLECTION_COLORS
 from ride_vis.route import load_track
+from ride_vis.ui import load_ui
 
 ROOT = Path(__file__).parent
 CONFIG_FILE = ROOT / "ride.toml"
+UI_FILE = ROOT / "ui.toml"
+LANG_DIR = ROOT / "lang"
 WEB_DIR = ROOT / "web"
 APP_DIR = ROOT / "app"
 
@@ -159,7 +162,15 @@ def main() -> None:
     config = load_config(CONFIG_FILE, ROOT)
     tour, collections = config.tour, config.collections
 
+    ui, untranslated = load_ui(UI_FILE, LANG_DIR)
+    if untranslated:
+        print(f"Language {ui.language}: {len(untranslated)} keys fall back to English ({', '.join(untranslated[:5])})")
+
     track = load_track(tour.track, labels=stage_labels(tour.stages))
+    if not tour.stages:
+        template = ui.strings.get("dayLabel", "Day {n}")
+        for day in track.days:
+            day.label = template.replace("{n}", str(day.index))
     photos = []
     print(f"Track   {track.distance_m / 1000:7.1f} km, {len(track.days)} riding days")
     width = max(len(c.name) for c in collections)
@@ -218,7 +229,7 @@ def main() -> None:
 
     drop_stale(APP_DIR, photos, args.full)
 
-    payload = build_payload(tour, track, placements, assets, collections, args.full)
+    payload = build_payload(tour, track, placements, assets, collections, ui, args.full)
     size = write(payload, APP_DIR)
     print(f"Data    tour.js {size / 1024 ** 2:.1f} MB (tour.json alongside)")
     if args.standalone:

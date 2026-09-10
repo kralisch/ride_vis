@@ -8,23 +8,23 @@ const DEM = {
 };
 
 const ESRI = "&copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors";
-const DEFAULT_BASEMAP = "satellite";
+
 const BASEMAPS = [
-  { id: "light", label: "Map (light)", hillshade: true,
+  { id: "light", hillshade: true,
     tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"],
     attribution: ESRI, maxzoom: 16 },
-  { id: "topo", label: "Topographic", hillshade: false,
+  { id: "topo", hillshade: false,
     tiles: ["https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
             "https://b.tile.opentopomap.org/{z}/{x}/{y}.png"],
     attribution: "Map data &copy; OpenStreetMap contributors, SRTM | Style &copy; OpenTopoMap (CC-BY-SA)",
     maxzoom: 17 },
-  { id: "satellite", label: "Satellite", hillshade: false,
+  { id: "satellite", hillshade: false,
     tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
     attribution: ESRI, maxzoom: 18 },
-  { id: "relief", label: "Hillshade", hillshade: false,
+  { id: "relief", hillshade: false,
     tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}"],
     attribution: ESRI, maxzoom: 16 },
-  { id: "osm", label: "OpenStreetMap", hillshade: true,
+  { id: "osm", hillshade: true,
     tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
     attribution: "&copy; OpenStreetMap contributors", maxzoom: 19 },
 ];
@@ -35,7 +35,12 @@ const DEFAULT_PITCH = 45;
 const FIT_PADDING = { top: 44, bottom: 44, left: 300, right: 44 };
 
 const $ = (sel) => document.querySelector(sel);
-const fmt = new Intl.NumberFormat("en-GB");
+
+/** Wording and number format come from lang/<language>.toml via tour.js. */
+let fmt = new Intl.NumberFormat("en-GB");
+const t = (key, params = {}) =>
+  String(state.tour?.ui?.strings?.[key] ?? key)
+    .replace(/\{(\w+)\}/g, (_, name) => (name in params ? params[name] : ""));
 const km = (m, digits = 0) => `${fmt.format(+(m / 1000).toFixed(digits))} km`;
 const hhmm = (s) => `${Math.floor(s / 3600)}:${String(Math.floor((s % 3600) / 60)).padStart(2, "0")} h`;
 const megabytes = (bytes) => `${fmt.format(+(bytes / 1024 ** 2).toFixed(1))} MB`;
@@ -62,11 +67,11 @@ function buildStyle() {
     sources[base.id] = { type: "raster", tiles: base.tiles, tileSize: 256,
                          maxzoom: base.maxzoom, attribution: base.attribution };
     layers.push({ id: `base-${base.id}`, type: "raster", source: base.id,
-                  layout: { visibility: base.id === DEFAULT_BASEMAP ? "visible" : "none" } });
+                  layout: { visibility: base.id === state.tour.ui.basemap ? "visible" : "none" } });
   }
   // Hillshading belongs under the flat maps only - over imagery or the relief
   // map it doubles up their own lighting.
-  const shaded = BASEMAPS.find((b) => b.id === DEFAULT_BASEMAP).hillshade;
+  const shaded = BASEMAPS.find((b) => b.id === state.tour.ui.basemap).hillshade;
   layers.push({ id: "hillshade", type: "hillshade", source: "dem",
                 paint: { "hillshade-exaggeration": 0.35 },
                 layout: { visibility: shaded ? "visible" : "none" } });
@@ -356,7 +361,7 @@ function drawProfile() {
       ctx.beginPath(); ctx.moveTo(x + .5, PAD.top); ctx.lineTo(x + .5, PAD.top + plotH); ctx.stroke();
     }
     ctx.fillStyle = "#52514e";
-    ctx.fillText(segment.day.label.length > 14 ? `Day ${segment.day.index}` : segment.day.label, x + (sx(segment.offset + segment.day.distance_m) - x) / 2,
+    ctx.fillText(segment.day.label.length > 14 ? t("dayLabel", { n: segment.day.index }) : segment.day.label, x + (sx(segment.offset + segment.day.distance_m) - x) / 2,
                  PAD.top + plotH + 5);
   }
 
@@ -423,9 +428,14 @@ function wireProfile() {
     const { point, day } = hit.nearest;
     $("#crosshair").hidden = false;
     $("#crosshair").style.left = `${hit.px}px`;
-    $("#profile-readout").textContent =
-      `${day.label} · ${km(point.x - profile.segments.find((s) => s.day.index === day.index).offset, 1)}`
-      + ` · ${fmt.format(point.y)} m · ${hhmm(point.t)} in`;
+    const into = point.x - profile.segments.find((s) => s.day.index === day.index).offset;
+    $("#profile-readout").textContent = t("readout", {
+      day: day.label,
+      distance: km(into, 1),
+      elevation: fmt.format(point.y),
+      time: hhmm(point.t),
+    })
+;
     hoverMarker.setLngLat([point.lon, point.lat]).addTo(map);
     wrap.style.cursor = hit.photo ? "pointer" : "crosshair";
   });
@@ -539,12 +549,12 @@ function openLightbox(index) {
   const photo = state.tour.photos[index];
   state.active = index;
   $("#lb-img").src = photo.view;
-  $("#lb-img").alt = `Photo taken ${photo.datetime.slice(0, 10)}`;
+  $("#lb-img").alt = photo.datetime.slice(0, 10);
   $("#lb-title").textContent = `${photo.time} · ${dayByIndex(photo.day).label}`;
   $("#lb-meta").textContent =
     [
       setById(photo.collection)?.name,
-      km(photo.d, 1) + " into the day",
+      t("intoTheDay", { distance: km(photo.d, 1) }),
       photo.ele !== null ? `${fmt.format(photo.ele)} m` : null,
       photo.name,
     ].filter(Boolean).join(" · ");
@@ -556,7 +566,7 @@ function openLightbox(index) {
   if (photo.full) {
     full.href = photo.full;
     // Say "full resolution" only when it really is the untouched camera file.
-    const wording = state.tour.fullKind === "half" ? "Large view" : "Full resolution";
+    const wording = t(state.tour.fullKind === "half" ? "largeView" : "fullResolution");
     full.textContent =
       `${wording} · ${fmt.format(photo.fullW)} × ${fmt.format(photo.fullH)} · ${megabytes(photo.fullBytes)}`;
   }
@@ -599,10 +609,10 @@ function fillBasemapSelect() {
   const select = $("#basemap");
   for (const base of BASEMAPS) {
     const option = document.createElement("option");
-    option.value = base.id; option.textContent = base.label;
+    option.value = base.id; option.textContent = state.tour.ui.basemaps[base.id] ?? base.id;
     select.append(option);
   }
-  select.value = DEFAULT_BASEMAP;
+  select.value = state.tour.ui.basemap;
 }
 
 function wireControls() {
@@ -645,22 +655,50 @@ function wireControls() {
 
 /* ----------------------------------------------------------- Setup -- */
 
-function renderHeader() {
-  const { title, totals } = state.tour;
+/** Fill the fixed labels from the language file. */
+function renderChrome() {
+  const { title, ui } = state.tour;
+  fmt = new Intl.NumberFormat(ui.locale);
+  document.documentElement.lang = ui.language;
   $("#title").textContent = title;
   document.title = title;
-  $("#totals").dataset.prefix =
-    `${km(totals.distance_m)} · ${fmt.format(totals.ascent_m)} m climb · ${totals.days} days`;
+
+  const labels = {
+    "#head .field:nth-of-type(1) span": "map",
+    "#head .field:nth-of-type(2) span": "relief",
+    "#tilt": "threeD",
+    ".legend-head h2": "days",
+    "#reset": "showAll",
+    ".legend-sub": "collections",
+    "#legend-hint": "hint",
+    "#profile-panel .panel-head h2": "elevation",
+    "#strip-panel .panel-head h2": "timeline",
+  };
+  for (const [selector, key] of Object.entries(labels)) {
+    const node = $(selector);
+    if (node) node.textContent = t(key);
+  }
+  const aria = { ".lb-close": "close", ".lb-prev": "previous", ".lb-next": "next" };
+  for (const [selector, key] of Object.entries(aria)) {
+    $(selector)?.setAttribute("aria-label", t(key));
+  }
 }
 
 /** The photo counts follow the switches - otherwise they would state a number
  *  that matches nothing on screen. */
 function syncCounts() {
+  const { totals } = state.tour;
   const shown = state.tour.photos.filter(visiblePhoto).length;
-  const total = state.tour.totals.photos;
-  const suffix = shown === total ? `${total} photos` : `${fmt.format(shown)} of ${total} photos`;
-  $("#totals").textContent = `${$("#totals").dataset.prefix} · ${suffix}`;
-  $("#strip-count").textContent = `${suffix}, in capture order`;
+  const count = shown === totals.photos
+    ? t("photos", { n: fmt.format(totals.photos) })
+    : t("photosOf", { shown: fmt.format(shown), total: fmt.format(totals.photos) });
+  $("#totals").textContent = t("totals", {
+    distance: km(totals.distance_m),
+    ascent: fmt.format(totals.ascent_m),
+    days: totals.days,
+    photos: count,
+  });
+  $("#strip-count").textContent = t("captureOrder", { photos: count });
 }
 
 async function init() {
@@ -672,12 +710,14 @@ async function init() {
 
   // Header, legend, profile and timeline do not depend on the map module -
   // they are up at once, even if WebGL or the tiles take their time.
-  renderHeader();
+  renderChrome();
   renderLegend();
   renderStrip();
   wireProfile();
   wireLightbox();
   fillBasemapSelect();
+  $("#exaggeration").value = state.tour.ui.exaggeration;
+  $("#tilt").setAttribute("aria-pressed", String(state.tour.ui.terrain));
   refresh();
   new ResizeObserver(() => drawProfile()).observe($("#profile-wrap"));
 
@@ -701,7 +741,9 @@ async function init() {
   hoverMarker = new maplibregl.Marker({ element: dot });
 
   await styleReady(map);
-  map.setTerrain({ source: "dem", exaggeration: +$("#exaggeration").value });
+  if (state.tour.ui.terrain) {
+    map.setTerrain({ source: "dem", exaggeration: +$("#exaggeration").value });
+  }
   addRoutes();
   // The photo layer has to exist before the camera is set: added afterwards,
   // MapLibre stops placing the symbols on the terrain.
@@ -710,7 +752,7 @@ async function init() {
 
   wireControls();
   applyDayVisibility();
-  map.jumpTo({ pitch: DEFAULT_PITCH });
+  map.jumpTo({ pitch: state.tour.ui.terrain ? DEFAULT_PITCH : 0 });
   fitTo(state.tour.days, 0);
   applyHash();
   window.addEventListener("hashchange", applyHash);
@@ -721,7 +763,8 @@ function fail(error) {
   console.error(error);
   const box = document.createElement("div");
   box.id = "fatal";
-  box.textContent = `The view could not be built: ${error?.message ?? error}`;
+  box.textContent = state.tour ? t("buildFailed", { error: error?.message ?? error })
+                              : `The view could not be built: ${error?.message ?? error}`;
   document.body.append(box);
   document.documentElement.dataset.error = String(error?.stack ?? error).slice(0, 400);
 }

@@ -1,0 +1,10 @@
+# How the app presents itself. Wording lives in lang/<language>.toml.
+
+language = "de"
+
+# Basemap shown on open: light | topo | satellite | relief | osm
+basemap = "satellite"
+
+# Start tilted, and how strongly the terrain is exaggerated (1 to 3).
+terrain = true
+exaggeration = 1.5

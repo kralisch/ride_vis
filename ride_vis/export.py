@@ -9,6 +9,7 @@ from .config import Collection, Tour
 from .match import Placement
 from .palette import DASH_ARRAYS, day_style, direction
 from .route import Day, Track
+from .ui import Ui
 
 COORD_DIGITS = 5
 """About 1 m of resolution - enough for hairpins, keeps the payload small."""
@@ -92,6 +93,7 @@ def build_payload(
     placements: list[Placement],
     assets: dict,
     collections: list[Collection],
+    ui: Ui,
     full: str = "original",
 ) -> dict:
     lats = [p.lat for p in track.points]
@@ -99,6 +101,15 @@ def build_payload(
     return {
         "title": tour.title,
         "fullKind": full,
+        "ui": {
+            "language": ui.language,
+            "locale": ui.locale,
+            "basemap": ui.basemap,
+            "terrain": ui.terrain,
+            "exaggeration": ui.exaggeration,
+            "strings": ui.strings,
+            "basemaps": ui.basemap_names,
+        },
         "bounds": [min(lons), min(lats), max(lons), max(lats)],
         "totals": {
             "distance_m": round(track.distance_m),

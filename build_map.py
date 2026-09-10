@@ -17,9 +17,12 @@ from ride_vis.images import prepare
 from ride_vis.match import GPS, OUTSIDE, TRACK, TRACK_GAP, place_photos, verify_offset
 from ride_vis.render import build_map
 from ride_vis.route import load_track
+from ride_vis.ui import load_ui
 
 ROOT = Path(__file__).parent
 CONFIG_FILE = ROOT / "ride.toml"
+UI_FILE = ROOT / "ui.toml"
+LANG_DIR = ROOT / "lang"
 OUT_DIR = ROOT / "out"
 
 SOURCE_LABELS = {
@@ -49,7 +52,12 @@ def main() -> None:
     config = load_config(CONFIG_FILE, ROOT)
     tour, collections = config.tour, config.collections
 
+    ui, _ = load_ui(UI_FILE, LANG_DIR)
     track = load_track(tour.track, labels=stage_labels(tour.stages))
+    if not tour.stages:
+        template = ui.strings.get("dayLabel", "Day {n}")
+        for day in track.days:
+            day.label = template.replace("{n}", str(day.index))
     photos = [photo for c in collections for photo in load_collection_photos(c)]
     photos.sort(key=lambda p: p.taken)
     print(f"Track   {track.distance_m / 1000:7.1f} km, {len(track.days)} riding days")
@@ -74,7 +82,7 @@ def main() -> None:
     assets = prepare(photos, OUT_DIR, full="none")
 
     out = OUT_DIR / "map.html"
-    build_map(track, placements, assets, collections, tour.title).save(str(out))
+    build_map(track, placements, assets, collections, tour.title, ui).save(str(out))
     print(f"Map     {out}")
     if args.open:
         webbrowser.open(out.as_uri())
