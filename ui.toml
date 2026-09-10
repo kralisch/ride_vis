@@ -1,6 +1,6 @@
 # How the app presents itself. Wording lives in lang/<language>.toml.
 
-language = "de"
+language = "en"
 
 # Basemap shown on open: light | topo | satellite | relief | osm
 basemap = "satellite"
