@@ -2,7 +2,8 @@
 
 language = "en"
 
-# Basemap shown on open: light | topo | satellite | relief | osm
+# Basemap shown on open: light | topo | satellite | relief | streets | osm
+# (osm needs a referrer and is hidden when the page is opened from disk)
 basemap = "satellite"
 
 # Start tilted, and how strongly the terrain is exaggerated (1 to 3).

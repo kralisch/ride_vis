@@ -173,7 +173,15 @@ def build_map(
         name=ui.basemap_names["topo"],
         max_zoom=17,
     ).add_to(fmap)
-    folium.TileLayer("openstreetmap", name=ui.basemap_names["osm"]).add_to(fmap)
+    # OpenStreetMap answers requests without a referrer with a "blocked" tile,
+    # and this map is meant to be opened straight from disk.
+    folium.TileLayer(
+        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/"
+              "MapServer/tile/{z}/{y}/{x}",
+        attr="&copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors",
+        name=ui.basemap_names["streets"],
+        max_zoom=18,
+    ).add_to(fmap)
     # Muted grey with no colour fills of its own - the surface the two route
     # colours were checked against for contrast and colour blindness.
     # (CartoDB Positron would be the obvious pick but now only serves tiles

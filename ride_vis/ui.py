@@ -6,7 +6,7 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
-BASEMAPS = ("light", "topo", "satellite", "relief", "osm")
+BASEMAPS = ("light", "topo", "satellite", "relief", "streets", "osm")
 FALLBACK_LANGUAGE = "en"
 
 

@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- OpenStreetMap serves a "blocked" tile to requests without a referrer.
+     This is the browser default, stated so a stricter default cannot break it. -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Ride</title>
 <link rel="stylesheet" href="vendor/maplibre-gl.css">
 <link rel="stylesheet" href="app.css">

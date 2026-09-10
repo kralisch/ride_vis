@@ -24,7 +24,13 @@ const BASEMAPS = [
   { id: "relief", hillshade: false,
     tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}"],
     attribution: ESRI, maxzoom: 16 },
-  { id: "osm", hillshade: true,
+  { id: "streets", hillshade: false,
+    tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"],
+    attribution: ESRI, maxzoom: 18 },
+  // OpenStreetMap answers requests without a referrer with a "blocked" tile.
+  // A page opened from disk sends none and cannot, so the layer is only
+  // offered where the browser does send one.
+  { id: "osm", hillshade: true, needsReferrer: true,
     tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
     attribution: "&copy; OpenStreetMap contributors", maxzoom: 19 },
 ];
@@ -33,6 +39,17 @@ const DEFAULT_PITCH = 45;
 /* A steeper pitch makes fitBounds zoom far out on a north-south route -
    45 degrees is where the relief reads and the ride still fills the frame. */
 const FIT_PADDING = { top: 44, bottom: 44, left: 300, right: 44 };
+
+/** Layers that need a referrer are useless on a page opened from disk. */
+const usableBasemaps = () =>
+  BASEMAPS.filter((base) => !base.needsReferrer || location.protocol !== "file:");
+
+/** The configured default may be one of those - fall back rather than start blank. */
+const startBasemap = () => {
+  const usable = usableBasemaps();
+  const wanted = state.tour.ui.basemap;
+  return usable.some((b) => b.id === wanted) ? wanted : usable[0].id;
+};
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -63,15 +80,15 @@ function buildStyle() {
   const sources = { dem: { type: "raster-dem", tiles: DEM.tiles, encoding: "terrarium",
                            tileSize: 256, maxzoom: 15, attribution: DEM.attribution } };
   const layers = [];
-  for (const base of BASEMAPS) {
+  for (const base of usableBasemaps()) {
     sources[base.id] = { type: "raster", tiles: base.tiles, tileSize: 256,
                          maxzoom: base.maxzoom, attribution: base.attribution };
     layers.push({ id: `base-${base.id}`, type: "raster", source: base.id,
-                  layout: { visibility: base.id === state.tour.ui.basemap ? "visible" : "none" } });
+                  layout: { visibility: base.id === startBasemap() ? "visible" : "none" } });
   }
   // Hillshading belongs under the flat maps only - over imagery or the relief
   // map it doubles up their own lighting.
-  const shaded = BASEMAPS.find((b) => b.id === state.tour.ui.basemap).hillshade;
+  const shaded = usableBasemaps().find((b) => b.id === startBasemap()).hillshade;
   layers.push({ id: "hillshade", type: "hillshade", source: "dem",
                 paint: { "hillshade-exaggeration": 0.35 },
                 layout: { visibility: shaded ? "visible" : "none" } });
@@ -607,22 +624,22 @@ function wireLightbox() {
 
 function fillBasemapSelect() {
   const select = $("#basemap");
-  for (const base of BASEMAPS) {
+  for (const base of usableBasemaps()) {
     const option = document.createElement("option");
     option.value = base.id; option.textContent = state.tour.ui.basemaps[base.id] ?? base.id;
     select.append(option);
   }
-  select.value = state.tour.ui.basemap;
+  select.value = startBasemap();
 }
 
 function wireControls() {
   const select = $("#basemap");
   select.addEventListener("change", () => {
-    for (const base of BASEMAPS) {
+    for (const base of usableBasemaps()) {
       map.setLayoutProperty(`base-${base.id}`, "visibility",
                             base.id === select.value ? "visible" : "none");
     }
-    const chosen = BASEMAPS.find((b) => b.id === select.value);
+    const chosen = usableBasemaps().find((b) => b.id === select.value);
     map.setLayoutProperty("hillshade", "visibility", chosen.hillshade ? "visible" : "none");
   });
 
