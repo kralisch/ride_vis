@@ -12,9 +12,9 @@ title = "My ride"
 #   track = ["gpx/day1.gpx", "gpx/day2.gpx"]
 track = "gpx/track.gpx"
 
-# Optional. Folder of planned stage files named "<n>_<name>.gpx"; only their
-# names are read, to label the riding days. Without it days are "Day 1" and so on.
-# stages = "gpx/stages"
+# Optional. Names for the riding days, in order. Days you leave out keep their
+# number. Without it every day is "Day 1" and so on, in the chosen language.
+# stages = ["Arrival", "Over the pass", "Coast road"]
 
 # Optional. Local time of the ride against the UTC stamps in the track, and the
 # fallback for cameras that write no offset into EXIF. Default 0.

@@ -144,7 +144,7 @@ def _check_overlap(spans: list[tuple[datetime, datetime, Path]]) -> None:
             )
 
 
-def load_track(paths: Path | Sequence[Path], labels: list[str] | None = None) -> Track:
+def load_track(paths: Path | Sequence[Path]) -> Track:
     """Load the recorded track; only points carrying a timestamp count.
 
     Several files pool into one ride. Their order does not matter - the clock
@@ -173,8 +173,4 @@ def load_track(paths: Path | Sequence[Path], labels: list[str] | None = None) ->
     _check_overlap(spans)
     points.sort(key=lambda p: p.time)
 
-    days = _split_days(points)
-    for day in days:
-        if labels and day.index <= len(labels):
-            day.label = labels[day.index - 1]
-    return Track(points=points, days=days)
+    return Track(points=points, days=_split_days(points))

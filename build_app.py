@@ -28,7 +28,7 @@ from ride_vis.images import FULL_MODES, HALF_DIR, marker, prepare
 from ride_vis.match import GPS, OUTSIDE, TRACK, TRACK_GAP, place_photos, verify_offset
 from ride_vis.palette import COLLECTION_COLORS
 from ride_vis.route import load_track
-from ride_vis.ui import load_ui
+from ride_vis.ui import day_names, load_ui
 
 ROOT = Path(__file__).parent
 CONFIG_FILE = ROOT / "ride.toml"
@@ -46,17 +46,6 @@ SOURCE_LABELS = {
     TRACK_GAP: "interpolated across a recording gap",
     OUTSIDE: "outside the recording",
 }
-
-
-def stage_labels(directory: Path | None) -> list[str]:
-    """Day names taken from the planned stage files, if any are configured."""
-    if directory is None:
-        return []
-    labels = []
-    for path in sorted(directory.glob("[0-9]_*.gpx")):
-        parts = path.stem.split("_")
-        labels.append(" ".join(parts[1:]).replace("-", " - "))
-    return labels
 
 
 def build_markers(placements, out_dir: Path, colors: dict[str, str]) -> None:
@@ -170,16 +159,16 @@ def main() -> None:
         print(f"Language {ui.language}: {len(untranslated)} keys fall back to English ({', '.join(untranslated[:5])})")
 
     try:
-        track = load_track(tour.track, labels=stage_labels(tour.stages))
+        track = load_track(tour.track)
     except (ValueError, OSError) as broken:
         raise SystemExit(f"Track   {broken}") from None
-    if not tour.stages:
-        template = ui.strings.get("dayLabel", "Day {n}")
-        for day in track.days:
-            day.label = template.replace("{n}", str(day.index))
+    for day, name in zip(track.days, day_names(len(track.days), tour.labels, ui)):
+        day.label = name
     photos = []
     files = f", {len(tour.track)} files" if len(tour.track) > 1 else ""
     print(f"Track   {track.distance_m / 1000:7.1f} km, {len(track.days)} riding days{files}")
+    if tour.labels and len(tour.labels) != len(track.days):
+        print(f"        {len(tour.labels)} day names configured - the rest are numbered")
     width = max(len(c.name) for c in collections)
     for collection in collections:
         found = load_collection_photos(collection)

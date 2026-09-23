@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import tomllib
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -20,6 +21,15 @@ class Ui:
     exaggeration: float
     strings: dict[str, str]
     basemap_names: dict[str, str]
+
+
+def day_names(count: int, labels: Sequence[str], ui: Ui) -> list[str]:
+    """Names for the riding days: the configured ones, every other day numbered."""
+    template = ui.strings.get("dayLabel", "Day {n}")
+    return [
+        labels[i] if i < len(labels) else template.replace("{n}", str(i + 1))
+        for i in range(count)
+    ]
 
 
 def _read_language(code: str, lang_dir: Path) -> tuple[dict, list[str]]:

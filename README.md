@@ -30,7 +30,7 @@ Everything lives in `ride.toml`; `ride.example.toml` is the template.
 [tour]
 title = "My ride"
 track = "gpx/track.gpx"
-stages = "gpx/stages"       # optional, only for day names
+stages = ["Arrival", "Over the pass"]   # optional, names for the riding days
 utc_offset_hours = 2        # optional, see below
 
 [[collection]]
@@ -68,6 +68,25 @@ Track   day1.gpx and navi_day1.gpx both cover 30.08. 07:54 to 30.08. 14:28 -
 
 Every file needs timestamps. A planned route carries none and is refused - the
 whole point is when you were where.
+
+### Naming the riding days
+
+Days are numbered unless you say otherwise - "Day 1", or whatever `dayLabel`
+says in the chosen language. `stages` gives them names instead:
+
+```toml
+stages = ["Arrival", "Over the pass", "Coast road"]
+```
+
+In order, first name to the first day. Name fewer days than the ride has and
+the rest keep their number, so naming only the first two is fine. The build
+says so when the counts differ.
+
+Names are written here and nowhere else. Reading them off planned stage files
+used to be possible and is gone: planned stages and recorded days are not the
+same thing - a long lunch break splits a day, a rest day exists in the plan and
+not in the recording - and since the two are matched by position, one mismatch
+quietly shifts every name after it.
 
 ### Adding or removing photos
 

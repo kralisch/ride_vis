@@ -17,7 +17,7 @@ from ride_vis.images import prepare
 from ride_vis.match import GPS, OUTSIDE, TRACK, TRACK_GAP, place_photos, verify_offset
 from ride_vis.render import build_map
 from ride_vis.route import load_track
-from ride_vis.ui import load_ui
+from ride_vis.ui import day_names, load_ui
 
 ROOT = Path(__file__).parent
 CONFIG_FILE = ROOT / "ride.toml"
@@ -33,17 +33,6 @@ SOURCE_LABELS = {
 }
 
 
-def stage_labels(directory: Path | None) -> list[str]:
-    """Day names taken from the planned stage files, if any are configured."""
-    if directory is None:
-        return []
-    labels = []
-    for path in sorted(directory.glob("[0-9]_*.gpx")):
-        parts = path.stem.split("_")
-        labels.append(" ".join(parts[1:]).replace("-", " - "))
-    return labels
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--open", action="store_true", help="open the map in a browser")
@@ -57,13 +46,11 @@ def main() -> None:
 
     ui, _ = load_ui(UI_FILE, LANG_DIR)
     try:
-        track = load_track(tour.track, labels=stage_labels(tour.stages))
+        track = load_track(tour.track)
     except (ValueError, OSError) as broken:
         raise SystemExit(f"Track   {broken}") from None
-    if not tour.stages:
-        template = ui.strings.get("dayLabel", "Day {n}")
-        for day in track.days:
-            day.label = template.replace("{n}", str(day.index))
+    for day, name in zip(track.days, day_names(len(track.days), tour.labels, ui)):
+        day.label = name
     photos = [photo for c in collections for photo in load_collection_photos(c)]
     photos.sort(key=lambda p: p.taken)
     files = f", {len(tour.track)} files" if len(tour.track) > 1 else ""

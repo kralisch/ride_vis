@@ -40,8 +40,8 @@ class Tour:
     title: str
     track: tuple[Path, ...]
     """The recorded GPX files, in the order they were named."""
-    stages: Path | None = None
-    """Optional folder of planned stage files, read only for their names."""
+    labels: tuple[str, ...] = ()
+    """Names for the riding days, in order. Empty when none are configured."""
     utc_offset: timedelta = timedelta()
     """Local time of the ride, relative to the UTC stamps in the track."""
 
@@ -85,23 +85,27 @@ def _track_files(value: object, root: Path, config: Path) -> tuple[Path, ...]:
     return tuple(dict.fromkeys(files))
 
 
+def _day_labels(value: object, config: Path) -> tuple[str, ...]:
+    """Names for the riding days, in order."""
+    if value is None:
+        return ()
+    if isinstance(value, list) and all(isinstance(entry, str) for entry in value):
+        return tuple(value)
+    raise ValueError(
+        f'stages in {config.name} must be a list of names, e.g. ["Arrival", "Over the pass"]'
+    )
+
+
 def _read_tour(raw: dict, root: Path, config: Path) -> Tour:
     try:
         title, track = raw["title"], raw["track"]
     except KeyError as missing:
         raise ValueError(f"[tour] in {config.name} is missing {missing}") from None
 
-    track_files = _track_files(track, root, config)
-
-    stages = raw.get("stages")
-    stages_path = _resolve(stages, root) if stages else None
-    if stages_path is not None and not stages_path.is_dir():
-        raise NotADirectoryError(f"stage folder {stages_path} does not exist")
-
     return Tour(
         title=title,
-        track=track_files,
-        stages=stages_path,
+        track=_track_files(track, root, config),
+        labels=_day_labels(raw.get("stages"), config),
         utc_offset=timedelta(hours=raw.get("utc_offset_hours", DEFAULT_UTC_OFFSET_HOURS)),
     )
 
