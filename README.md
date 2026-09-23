@@ -42,6 +42,33 @@ Per collection: `id`, `enabled`, `color`, `exclude`, `utc_offset_hours` and
 `clock_offset_minutes` are optional. `id` is derived from the name when unset
 and shows up in file paths and deep links.
 
+### One track or several
+
+Recording per day is the normal case, so `track` takes more than one file:
+
+```toml
+track = "gpx/track.gpx"                       # one file
+track = "gpx"                                 # every .gpx in the folder
+track = ["gpx/day1.gpx", "gpx/day2.gpx"]      # or named one by one
+```
+
+They pool into a single ride. The order they are named in does not matter -
+what orders the ride is the clock, and the night between two recordings is
+what makes a riding day. Merging them beforehand is not only unnecessary, it
+is the more dangerous route: tools that merge tracks like to rewrite the
+timestamps, and those are what the photos hang on.
+
+A file repeated under another name drops out; two different recordings of the
+same hours stop the build, because they would double distance and climb.
+
+```
+Track   day1.gpx and navi_day1.gpx both cover 30.08. 07:54 to 30.08. 14:28 -
+        the same ride twice would double its distance and climb
+```
+
+Every file needs timestamps. A planned route carries none and is refused - the
+whole point is when you were where.
+
 ### Adding or removing photos
 
 Always at the source, then build again - **not** in the finished `app/`. Each

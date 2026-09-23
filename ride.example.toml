@@ -4,6 +4,12 @@
 
 [tour]
 title = "My ride"
+
+# The recording. One file, a folder holding the .gpx files, or a list of both;
+# several recordings pool into one ride, and the nights between them make the
+# riding days. Every file needs timestamps - a planned route will not do.
+#   track = "gpx"
+#   track = ["gpx/day1.gpx", "gpx/day2.gpx"]
 track = "gpx/track.gpx"
 
 # Optional. Folder of planned stage files named "<n>_<name>.gpx"; only their

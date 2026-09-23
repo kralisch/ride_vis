@@ -49,18 +49,25 @@ def main() -> None:
     parser.add_argument("--open", action="store_true", help="open the map in a browser")
     args = parser.parse_args()
 
-    config = load_config(CONFIG_FILE, ROOT)
+    try:
+        config = load_config(CONFIG_FILE, ROOT)
+    except (ValueError, OSError) as broken:
+        raise SystemExit(f"Config  {broken}") from None
     tour, collections = config.tour, config.collections
 
     ui, _ = load_ui(UI_FILE, LANG_DIR)
-    track = load_track(tour.track, labels=stage_labels(tour.stages))
+    try:
+        track = load_track(tour.track, labels=stage_labels(tour.stages))
+    except (ValueError, OSError) as broken:
+        raise SystemExit(f"Track   {broken}") from None
     if not tour.stages:
         template = ui.strings.get("dayLabel", "Day {n}")
         for day in track.days:
             day.label = template.replace("{n}", str(day.index))
     photos = [photo for c in collections for photo in load_collection_photos(c)]
     photos.sort(key=lambda p: p.taken)
-    print(f"Track   {track.distance_m / 1000:7.1f} km, {len(track.days)} riding days")
+    files = f", {len(tour.track)} files" if len(tour.track) > 1 else ""
+    print(f"Track   {track.distance_m / 1000:7.1f} km, {len(track.days)} riding days{files}")
     print(f"Photos  {len(photos)} with a capture time, {sum(1 for p in photos if p.gps)} with GPS")
 
     checks = sorted(metres for _, metres in verify_offset(photos, track))

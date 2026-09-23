@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -12,6 +13,9 @@ from .geo import Point, cumulative
 
 DAY_BREAK = timedelta(hours=4)
 """A gap this long in the recording starts a new riding day."""
+
+SEAM_TOLERANCE = timedelta(minutes=1)
+"""Two recordings may touch where one was stopped and the next started."""
 
 
 @dataclass
@@ -112,9 +116,9 @@ def _split_days(points: list[TrackPoint]) -> list[Day]:
     return [Day(index=i, points=g) for i, g in enumerate(groups, start=1) if len(g) > 1]
 
 
-def load_track(path: Path, labels: list[str] | None = None) -> Track:
-    """Load a recorded GPX track; only points carrying a timestamp count."""
-    gpx = gpxpy.parse(path.read_text(encoding="utf-8"))
+def _read_points(path: Path) -> list[TrackPoint]:
+    """The timed points of one file, in order."""
+    gpx = gpxpy.parse(path.read_text(encoding="utf-8-sig"))
     points = [
         TrackPoint(lat=p.latitude, lon=p.longitude, time=p.time.replace(tzinfo=None), ele=p.elevation)
         for track in gpx.tracks
@@ -124,6 +128,49 @@ def load_track(path: Path, labels: list[str] | None = None) -> Track:
     ]
     if not points:
         raise ValueError(f"{path.name} holds no track points with a timestamp")
+    points.sort(key=lambda p: p.time)
+    return points
+
+
+def _check_overlap(spans: list[tuple[datetime, datetime, Path]]) -> None:
+    """Refuse two files that cover the same hours - they would count double."""
+    spans.sort()
+    for (_, end, earlier), (start, _, later) in zip(spans, spans[1:]):
+        if start < end - SEAM_TOLERANCE:
+            raise ValueError(
+                f"{earlier.name} and {later.name} both cover "
+                f"{start:%d.%m. %H:%M} to {end:%d.%m. %H:%M} - "
+                f"the same ride twice would double its distance and climb"
+            )
+
+
+def load_track(paths: Path | Sequence[Path], labels: list[str] | None = None) -> Track:
+    """Load the recorded track; only points carrying a timestamp count.
+
+    Several files pool into one ride. Their order does not matter - the clock
+    orders the ride, and the gap between two recordings is where a day ends.
+    A file that only repeats points already read is a copy and drops out; two
+    recordings of the same hours are an error, they would count double.
+    """
+    files = [paths] if isinstance(paths, Path) else list(paths)
+    if not files:
+        raise ValueError("no track file to read")
+
+    spans: list[tuple[datetime, datetime, Path]] = []
+    seen: set[tuple[datetime, float, float]] = set()
+    points: list[TrackPoint] = []
+    for path in files:
+        found = _read_points(path)
+        fresh = 0
+        for point in found:
+            key = (point.time, point.lat, point.lon)
+            if key not in seen:
+                seen.add(key)
+                points.append(point)
+                fresh += 1
+        if fresh:
+            spans.append((found[0].time, found[-1].time, path))
+    _check_overlap(spans)
     points.sort(key=lambda p: p.time)
 
     days = _split_days(points)

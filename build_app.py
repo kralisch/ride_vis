@@ -159,20 +159,27 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
 
-    config = load_config(CONFIG_FILE, ROOT)
+    try:
+        config = load_config(CONFIG_FILE, ROOT)
+    except (ValueError, OSError) as broken:
+        raise SystemExit(f"Config  {broken}") from None
     tour, collections = config.tour, config.collections
 
     ui, untranslated = load_ui(UI_FILE, LANG_DIR)
     if untranslated:
         print(f"Language {ui.language}: {len(untranslated)} keys fall back to English ({', '.join(untranslated[:5])})")
 
-    track = load_track(tour.track, labels=stage_labels(tour.stages))
+    try:
+        track = load_track(tour.track, labels=stage_labels(tour.stages))
+    except (ValueError, OSError) as broken:
+        raise SystemExit(f"Track   {broken}") from None
     if not tour.stages:
         template = ui.strings.get("dayLabel", "Day {n}")
         for day in track.days:
             day.label = template.replace("{n}", str(day.index))
     photos = []
-    print(f"Track   {track.distance_m / 1000:7.1f} km, {len(track.days)} riding days")
+    files = f", {len(tour.track)} files" if len(tour.track) > 1 else ""
+    print(f"Track   {track.distance_m / 1000:7.1f} km, {len(track.days)} riding days{files}")
     width = max(len(c.name) for c in collections)
     for collection in collections:
         found = load_collection_photos(collection)

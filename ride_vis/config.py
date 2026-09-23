@@ -38,8 +38,8 @@ class Collection:
 @dataclass(frozen=True)
 class Tour:
     title: str
-    track: Path
-    """The recorded GPX track."""
+    track: tuple[Path, ...]
+    """The recorded GPX files, in the order they were named."""
     stages: Path | None = None
     """Optional folder of planned stage files, read only for their names."""
     utc_offset: timedelta = timedelta()
@@ -61,15 +61,37 @@ def _resolve(value: str, root: Path) -> Path:
     return path if path.is_absolute() else root / path
 
 
+def _track_files(value: object, root: Path, config: Path) -> tuple[Path, ...]:
+    """The GPX files behind `track`: one file, a folder of them, or a list of both."""
+    entries = [value] if isinstance(value, str) else value
+    if not isinstance(entries, list) or not all(isinstance(entry, str) for entry in entries):
+        raise ValueError(f"track in {config.name} must be a path or a list of paths")
+
+    files: list[Path] = []
+    for entry in entries:
+        path = _resolve(entry, root)
+        if path.is_dir():
+            found = sorted({*path.glob("*.gpx"), *path.glob("*.GPX")})
+            if not found:
+                raise FileNotFoundError(f"track folder {path} holds no .gpx files")
+            files.extend(found)
+        elif path.is_file():
+            files.append(path)
+        else:
+            raise FileNotFoundError(f"track {path} does not exist")
+
+    if not files:
+        raise ValueError(f"track in {config.name} names no file")
+    return tuple(dict.fromkeys(files))
+
+
 def _read_tour(raw: dict, root: Path, config: Path) -> Tour:
     try:
         title, track = raw["title"], raw["track"]
     except KeyError as missing:
         raise ValueError(f"[tour] in {config.name} is missing {missing}") from None
 
-    track_path = _resolve(track, root)
-    if not track_path.is_file():
-        raise FileNotFoundError(f"track {track_path} does not exist")
+    track_files = _track_files(track, root, config)
 
     stages = raw.get("stages")
     stages_path = _resolve(stages, root) if stages else None
@@ -78,7 +100,7 @@ def _read_tour(raw: dict, root: Path, config: Path) -> Tour:
 
     return Tour(
         title=title,
-        track=track_path,
+        track=track_files,
         stages=stages_path,
         utc_offset=timedelta(hours=raw.get("utc_offset_hours", DEFAULT_UTC_OFFSET_HOURS)),
     )
@@ -121,11 +143,28 @@ def _read_collections(entries: list[dict], root: Path, config: Path, tour: Tour)
     return collections
 
 
+def _broken_toml(config: Path, text: str, broken: tomllib.TOMLDecodeError) -> str:
+    """The parser gives line and column; showing the line itself is what helps."""
+    message = f"{config.name} is not valid TOML: {broken}"
+    where = re.search(r"at line (\d+)", str(broken))
+    if where is None:
+        return message
+    number = int(where.group(1))
+    lines = text.splitlines()
+    if not 1 <= number <= len(lines):
+        return message
+    return f"{message}\n  {number:>4} | {lines[number - 1]}"
+
+
 def load_config(config: Path, root: Path) -> Config:
     """Load the configuration and check that everything it names exists."""
     if not config.exists():
         raise FileNotFoundError(f"{config} is missing - it holds the tour and its collections")
-    raw = tomllib.loads(config.read_text(encoding="utf-8"))
+    text = config.read_text(encoding="utf-8-sig")
+    try:
+        raw = tomllib.loads(text)
+    except tomllib.TOMLDecodeError as broken:
+        raise ValueError(_broken_toml(config, text, broken)) from None
     tour = _read_tour(raw.get("tour", {}), root, config)
     return Config(tour=tour, collections=_read_collections(raw.get("collection", []), root, config, tour))
 

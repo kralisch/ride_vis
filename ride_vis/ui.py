@@ -27,13 +27,13 @@ def _read_language(code: str, lang_dir: Path) -> tuple[dict, list[str]]:
     if not path.is_file():
         available = ", ".join(sorted(p.stem for p in lang_dir.glob("*.toml"))) or "none"
         raise FileNotFoundError(f"language {code!r} not found in {lang_dir} (available: {available})")
-    raw = tomllib.loads(path.read_text(encoding="utf-8"))
+    raw = tomllib.loads(path.read_text(encoding="utf-8-sig"))
 
     # Fall back to English for anything a translation has not covered, so a
     # half-finished language file still yields a usable app.
     missing: list[str] = []
     if code != FALLBACK_LANGUAGE:
-        base = tomllib.loads((lang_dir / f"{FALLBACK_LANGUAGE}.toml").read_text(encoding="utf-8"))
+        base = tomllib.loads((lang_dir / f"{FALLBACK_LANGUAGE}.toml").read_text(encoding="utf-8-sig"))
         for section in ("ui", "basemaps"):
             filled = dict(base.get(section, {}))
             for key, value in raw.get(section, {}).items():
@@ -45,7 +45,7 @@ def _read_language(code: str, lang_dir: Path) -> tuple[dict, list[str]]:
 
 def load_ui(config: Path, lang_dir: Path) -> tuple[Ui, list[str]]:
     """Read ui.toml and the language it names. Also returns untranslated keys."""
-    raw = tomllib.loads(config.read_text(encoding="utf-8")) if config.exists() else {}
+    raw = tomllib.loads(config.read_text(encoding="utf-8-sig")) if config.exists() else {}
     code = raw.get("language", FALLBACK_LANGUAGE)
     language, missing = _read_language(code, lang_dir)
 
