@@ -26,6 +26,10 @@ track = "gpx/track.gpx"
 #             reach the bundle. Example: exclude = ["20240830_120000.jpg"]
 #   utc_offset_hours
 #             optional; overrides the tour offset for this camera.
+#   clock_offset_minutes
+#             optional; corrects a camera clock that was set wrong. The value is
+#             added to every capture time, so a camera running seven minutes
+#             behind needs +7. Default 0.
 
 [[collection]]
 name = "My camera"

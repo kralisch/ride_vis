@@ -178,9 +178,11 @@ def main() -> None:
         found = load_collection_photos(collection)
         photos.extend(found)
         with_gps = sum(1 for p in found if p.gps)
+        minutes = collection.clock_offset.total_seconds() / 60
         print(
             f"Set     {collection.name:<{width}}  {collection.color}  "
             f"{len(found):4d} photos, {with_gps:3d} with GPS"
+            + (f", clock {minutes:+.0f} min" if minutes else "")
         )
     photos.sort(key=lambda p: p.taken)
     placements = place_photos(photos, track)

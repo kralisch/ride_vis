@@ -38,9 +38,9 @@ name = "My camera"
 location = "data/camera"
 ```
 
-Per collection: `id`, `enabled`, `color`, `exclude` and `utc_offset_hours` are
-optional. `id` is derived from the name when unset and shows up in file paths
-and deep links.
+Per collection: `id`, `enabled`, `color`, `exclude`, `utc_offset_hours` and
+`clock_offset_minutes` are optional. `id` is derived from the name when unset
+and shows up in file paths and deep links.
 
 ### Adding or removing photos
 
@@ -103,6 +103,31 @@ Check   32 photos with GPS: distance to the track position is 9 m in the middle,
 
 A wrong offset shows up here immediately. Where a photo has GPS, those
 coordinates are used directly - they beat any interpolation.
+
+### A camera clock that was set wrong
+
+The time zone is one thing, a clock that was never set right is another. A
+camera running seven minutes behind puts every one of its photos seven minutes
+too early on the track - at 60 km/h that is seven kilometres off.
+
+```toml
+[[collection]]
+name = "My camera"
+location = "data/camera"
+clock_offset_minutes = 7    # the camera was seven minutes behind
+```
+
+The value is added to every capture time of that collection, before anything
+else happens with it: positive when the camera was behind, negative when it was
+ahead. Each build repeats what it applied.
+
+```
+Set     My camera  #1baf7a   100 photos,   3 with GPS, clock +7 min
+```
+
+To find the value, take a photo of something the track pins down - arriving
+somewhere, a hairpin, a pass sign - and compare its stamp against the moment
+the track was there. Two or three of those agree quickly.
 
 The ring around a marker shows where its position came from:
 

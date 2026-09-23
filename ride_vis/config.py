@@ -27,6 +27,8 @@ class Collection:
     """Whether the collection starts switched on."""
     utc_offset: timedelta = timedelta()
     """Fallback for cameras that write no offset into EXIF."""
+    clock_offset: timedelta = timedelta()
+    """Correction for a camera whose clock was set wrong, added to every capture time."""
     color: str = ""
     """Ring colour of the photo markers; assigned by position when unset."""
     exclude: frozenset[str] = frozenset()
@@ -111,6 +113,7 @@ def _read_collections(entries: list[dict], root: Path, config: Path, tour: Tour)
                 location=path,
                 enabled=bool(entry.get("enabled", True)),
                 utc_offset=timedelta(hours=hours) if hours is not None else tour.utc_offset,
+                clock_offset=timedelta(minutes=entry.get("clock_offset_minutes", 0)),
                 color=entry.get("color") or collection_color(position),
                 exclude=frozenset(entry.get("exclude", ())),
             )
@@ -132,6 +135,9 @@ def load_collection_photos(collection: Collection) -> list[Photo]:
 
     An offset written by the camera wins; otherwise the configured one applies.
     Every photo carries a concrete value afterwards, so matching never guesses.
+
+    A configured `clock_offset` moves the capture times on top of that, for a
+    camera that was running ahead or behind. The order stays as it was.
     """
     photos = [
         photo
@@ -141,4 +147,5 @@ def load_collection_photos(collection: Collection) -> list[Photo]:
     for photo in photos:
         if photo.offset is None:
             photo.offset = collection.utc_offset
+        photo.taken += collection.clock_offset
     return photos
